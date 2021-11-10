@@ -6,27 +6,31 @@ import os
 import re
 import string
 import pandas as pd
+from utils import getListOfFiles, textCleaning
 
 # Important: https://stackoverflow.com/questions/13784192/creating-an-empty-pandas-dataframe-then-filling-it
 all_filenames = []
 
 def create_word_count_dict(dir_, stop_words): 
-    directory = os.fsencode(dir_)
+    # fix OS walk 
+    # directory = os.fsencode(dir_)
     unique_words = {}
     
     # goes through all of the txt files in a directory 
-    for file in os.listdir(directory):
-        filename = os.fsdecode(file)
-        if filename.endswith(".txt"): 
-            full_filename = dir_ + "/" + filename
-            str_ = open(full_filename).read()
-            lines = str_.split()
-            all_filenames.append(filename)
-           
-            
-            for word in lines:
-                # gets rid of punctuation in a word, makes the word lowercase 
-                w = word.translate(str.maketrans('', '', string.punctuation)).lower()
+    # for file in os.listdir(directory):
+    #     filename = os.fsdecode(file)
+    listOfFiles = getListOfFiles(dir_)
+    
+
+    for file in listOfFiles:
+
+        lines = textCleaning(file)
+        filename = file.split("/")[-1]
+        all_filenames.append(filename)
+        print("filename", filename)
+        for line in lines: 
+            for w in line: 
+            # gets rid of punctuation in a word, makes the word lowercase 
                 # NOTE: Still need to get rid of 's at end of word will most likely need to modify this ^ 
                 if (len(w) > 0) and (w not in stop_words):
                     if w in list(unique_words.keys()):
@@ -38,8 +42,8 @@ def create_word_count_dict(dir_, stop_words):
                     else: 
                         unique_words[w] = {filename:1}
 
-        else:
-            continue
+                else:
+                    continue
 
     return unique_words
 

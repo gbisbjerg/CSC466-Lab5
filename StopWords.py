@@ -1,6 +1,7 @@
 import argparse
 import os
 import csv
+from utils import * 
 
 '''
 This program parese all of the provided text files in the folder of interest and generates a word
@@ -24,23 +25,7 @@ def parse_args():
     For the given path, get the List of all files in the directory tree 
     Source - https://thispointer.com/python-how-to-get-list-of-files-in-directory-and-sub-directories/
 '''
-def getListOfFiles(dirName):
-    # create a list of file and sub directories 
-    # names in the given directory 
-    listOfFile = os.listdir(dirName)
-    allFiles = list()
-    # Iterate over all the entries
-    for entry in listOfFile:
-        if(entry != ".DS_Store"):
-            # Create full path
-            fullPath = os.path.join(dirName, entry)
-            # If entry is a directory then get the list of files in this directory 
-            if os.path.isdir(fullPath):
-                allFiles = allFiles + getListOfFiles(fullPath)
-            else:
-                allFiles.append(fullPath)
-
-    return allFiles     
+   
 
 def getOutFile(args):
     out_file = ""
@@ -48,13 +33,7 @@ def getOutFile(args):
         out_file = args.out_file
     return out_file
 
-def textCleaning(text):
-    text = text.lower() #Swap text to lowercase 
-    words = text.split() #Split text into words on spaces
-    words = [word.strip('.,!;()[]"\'') for word in words] #Remove punctuation 
-    words = [word.replace("'s", '') for word in words] #Removing hanging apostrophe 's
 
-    return words
 
 def findUniqueWords(clean_text):
     unique = []
@@ -97,14 +76,16 @@ def main():
     
     word_file_count = {}
     for file in listOfFiles:
-        print(file)
-        text_file = open(file, 'r')
-        text = text_file.read()
-        clean_text = textCleaning(text)
+        clean_text = textCleaning(file)
         unique_words = findUniqueWords(clean_text)
         word_file_count = updateWordFileCount(word_file_count, unique_words)
 
+    word_file_count.pop("", None)
     makeWordCount_CSV(out_file, word_file_count)
+
+    #0.015 * len()
+
+
 
 
 if __name__ == "__main__":
