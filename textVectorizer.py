@@ -76,7 +76,7 @@ def convert_df_counts_to_ratios():
     # NOTE: still need to do this with numpy 
 
 def main(): 
-    directory = "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/files"
+    directory = "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/C50/C50test/AaronPressman"
     stop_words = put_stop_words_in_list(filename="stop_words.txt")
     word_dict = create_word_count_dict(directory, stop_words)
     df = create_df(word_dict)
