@@ -28,3 +28,21 @@ def textCleaning(file_):
 
     return line
 
+def getGroundTruth(dirName, toCSV = False):
+    list_of_files = getListOfFiles(dirName)
+    groundTruthDic = {}
+
+    if(toCSV):
+        f = open("groundTruth.csv", 'w') 
+        for file in list_of_files:
+            author = file.split('/')[-2]
+            txt_file = file.split('/')[-1]
+            f.write("%s,%s\n"%(txt_file, author))
+
+    else:
+        for file in list_of_files:
+            author = file.split('/')[-2]
+            txt_file = file.split('/')[-1]
+            groundTruthDic[txt_file] = author
+    return groundTruthDic
+
