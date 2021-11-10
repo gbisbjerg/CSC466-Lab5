@@ -1,5 +1,6 @@
 import os 
 import string
+import nltk
 
 def getListOfFiles(dirName):
     # create a list of file and sub directories 
@@ -21,10 +22,10 @@ def getListOfFiles(dirName):
 
 
 def textCleaning(file_):
-    
+    lemma = nltk.wordnet.WordNetLemmatizer()
     text_file = open(file_, 'r').read()
     lines = text_file.split()
-    line = [word.replace("'s", '').translate(str.maketrans('', '', string.punctuation)).lower() for word in lines] 
+    line = [lemma.lemmatize( word.replace("'s", '').translate(str.maketrans('', '', string.punctuation)).lower()) for word in lines] 
 
     return line
 
