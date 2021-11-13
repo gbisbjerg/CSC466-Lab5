@@ -50,11 +50,10 @@ def containsNumber(word):
 
 def updateWordFileCount(word_file_count, unique_words):
     for word in unique_words:
-        if(not containsNumber(word)):
-            if word_file_count and word in word_file_count:
-                word_file_count[word] += 1
-            else:
-                word_file_count[word] = 1
+        if word_file_count and word in word_file_count:
+            word_file_count[word] += 1
+        else:
+            word_file_count[word] = 1
     return word_file_count
 
 def makeWordCount_CSV(out_file, word_file_count):
