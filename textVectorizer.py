@@ -13,6 +13,7 @@ import csv
 all_filenames = []
 
 def create_word_count_dict(dir_, stop_words): 
+    print("textVectorizer.py: create_word_count_dict")
     # fix OS walk 
     # directory = os.fsencode(dir_)
     unique_words = {}
@@ -27,8 +28,9 @@ def create_word_count_dict(dir_, stop_words):
 
         lines = textCleaning(file)
         filename = file.split("/")[-1]
-        all_filenames.append(filename)
         print("filename", filename)
+        all_filenames.append(filename)
+        #print("filename", filename)
         for w in lines: 
             #for w in line: 
             # gets rid of punctuation in a word, makes the word lowercase 
@@ -74,13 +76,17 @@ def put_stop_words_in_list(filename):
     file = open(filename, "r")
     csv_reader = csv.reader(file)
     lists_from_csv = []
+    ones = []
     
     for row in csv_reader:
+        if row[1] == "1": 
+            ones.append(row[0])
         lists_from_csv.append(row)
 
     num_stop_words = -1 * int(0.0155 * len(lists_from_csv))
     stop_words =  [word[0] for word in  lists_from_csv[num_stop_words:]]
-    return stop_words
+    print("stop words", stop_words + ones)
+    return stop_words + ones
 
 
 

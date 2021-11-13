@@ -34,24 +34,24 @@ def okapi_helper(combos, word, word_dict, df, doc_lengths, avdl, n):
     b = 0.75 
     k2 = 500
 
-    print("\nword", word, word_dict[word])
+    #print("\nword", word, word_dict[word])
     dfi = len(word_dict[word].keys())
-    print("dfi", dfi)
+    #print("dfi", dfi)
     dlj = doc_lengths[combos[0]]
-    print("dlj", dlj)
-    print("avdl", avdl)
-    print("n", n)
+    #print("dlj", dlj)
+    #print("avdl", avdl)
+    #print("n", n)
     fij = word_dict[word].get(combos[0], 0)
-    print('fij', fij)
+    #print('fij', fij)
     fiq = word_dict[word].get(combos[1], 0)
-    print('fiq', fiq)
+    #print('fiq', fiq)
 
     first = (n-dfi+0.5)/ (dfi+0.5)
     second = ((k1 + 1)*fij) / ((k1 * (1 - b + (b * (dlj/avdl)) ))+ fij)
     third = ((k2+1) * fiq) / (k2 + fiq)
 
     sol = first * second * third
-    print("sol", sol)
+    #print("sol", sol)
     if sol == 0: 
         return 1
     return sol
@@ -71,8 +71,8 @@ def okapi_helper(combos, word, word_dict, df, doc_lengths, avdl, n):
 def okapi(combos, word_dict, df, doc_lengths, avdl, n):
     file1 = combos[0]
     file2 = combos[1]
-    print("file1 ", file1)
-    print("file2 ", file2)
+    #print("file1 ", file1)
+    #print("file2 ", file2)
     # file_1 = combo[0]
     # file_2 = combo[1] 
     sum = 0
@@ -101,7 +101,8 @@ def okapi(combos, word_dict, df, doc_lengths, avdl, n):
 def main():
     # MATRIXES ALL WORDS IN ALL FILES 
     # matrix = get_matrix() # vectorize one og
-    dir = "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/smaller_test"
+    dir = "C50"# "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/C50/C50test/AaronPressman"#"C50"
+    #dir = "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/small_test"
     listOfFiles = getListOfFiles(dir)
     short_files = [file.split("/")[-1] for file in listOfFiles]
     # short_files = ["1", "2", "3", "4"]
@@ -111,25 +112,27 @@ def main():
     
     stop_words = put_stop_words_in_list(filename="word_file_count.csv")
     word_dict = create_word_count_dict(dir, stop_words)
-    print("word_dict\n", word_dict)
+    #print("word_dict\n", word_dict)
     df = create_df(word_dict)
 
     file_combinations = [comb for comb in combinations(short_files, 2)]
-    print("file combos", file_combinations)
+    #print("file combos", file_combinations)
     
     distance_df = pd.DataFrame(data=None, index=short_files, columns=short_files, dtype=None, copy=False)
-    print("df\n", distance_df)
-    #print("combos", file_combinations)
+    #print("df\n", distance_df)
+    ##print("combos", file_combinations)
 
 
     for combo in file_combinations: 
+        print("combo", combo)
         #df.insert(combo[0], combo[1], okapi(combo))
         distance_df.loc[combo[0]][combo[1]] = okapi(combo, word_dict, df, doc_lengths, avdl, n)
 
     
-    print("df\n", distance_df)
+    #print("df\n", distance_df)
+    distance_df.to_csv("okapi_small_test_output", sep=',')
 
-        # Result: 
+    #     Result: 
     #       1    2    3    4
     # 1  NaN    1    1    1
     # 2  NaN  NaN    1    1
