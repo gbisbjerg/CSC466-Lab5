@@ -13,7 +13,7 @@ import csv
 all_filenames = []
 
 def create_word_count_dict(dir_, stop_words): 
-    # print("textVectorizer.py: create_word_count_dict")
+    # #print("textVectorizer.py: create_word_count_dict")
     # fix OS walk 
     # directory = os.fsencode(dir_)
     unique_words = {}
@@ -28,9 +28,9 @@ def create_word_count_dict(dir_, stop_words):
 
         lines = textCleaning(file)
         filename = file.split("/")[-1]
-        # print("filename", filename)
+        # #print("filename", filename)
         all_filenames.append(filename)
-        #print("filename", filename)
+        ##print("filename", filename)
         for w in lines: 
             #for w in line: 
             # gets rid of punctuation in a word, makes the word lowercase 
@@ -85,7 +85,7 @@ def put_stop_words_in_list(filename):
 
     num_stop_words = -1 * int(0.0155 * len(lists_from_csv))
     stop_words =  [word[0] for word in  lists_from_csv[num_stop_words:]]
-    # print("stop words", stop_words + ones)
+    # #print("stop words", stop_words + ones)
     return stop_words + ones
 
 
@@ -95,13 +95,9 @@ def convert_df_counts_to_ratios():
     pass 
     # NOTE: still need to do this with numpy 
 
-def main(): 
-    directory = "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/C50/C50test/AaronPressman"
-    stop_words = put_stop_words_in_list(filename="word_file_count.csv")
+def vectorizer_main(): 
+    directory = "C50"
+    stop_words = put_stop_words_in_list(filename="./general/word_file_count.csv")
     word_dict = create_word_count_dict(directory, stop_words)
     df = create_df(word_dict)
-    print(df)
-    
-
-
-# main()
+    df.to_csv("./general/c50_word_counts_in", sep=',')
