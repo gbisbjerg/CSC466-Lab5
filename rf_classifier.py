@@ -15,7 +15,7 @@ import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn' https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 import matplotlib.pyplot as plt
 import numpy as np
-from InduceC45 import format_data
+from rf_InduceC45 import format_data
 
 def classifier(D, tree, class_attribute, ret_pred=False):
   '''

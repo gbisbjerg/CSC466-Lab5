@@ -9,17 +9,10 @@ from textVectorizer import vectorizer_main
 pd.options.mode.chained_assignment = None  # default='warn' https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 import matplotlib.pyplot as plt
 import numpy as np
-from InduceC45 import format_data, C45
-from classifier import classifier
+from rf_InduceC45 import format_data, C45
+from rf_classifier import classifier
 import copy
 import random
-
-def CreateResultsDF(df_shuffled, C):
-    res_DF = pd.DataFrame(columns = ['Predicted', 'Actual'])
-    actual_column = df_shuffled[C]
-    res_DF = pd.DataFrame(index=df_shuffled.index)
-    res_DF['Actual'] = actual_column.copy()
-    return res_DF
 
 def AttributeRandSelect(A, NumAttributes, rand_seed):
     random.seed(rand_seed)
@@ -30,9 +23,7 @@ def ForestCreation(D, initial_T, A, C, NumAttributes, NumDataPoints, NumTrees, r
     #Dataset Selection/Behavior
     forest = [None] * NumTrees
     for i in range(0,NumTrees):
-        
         T = copy.deepcopy(initial_T)
-
         selected_attributes = AttributeRandSelect(A, NumAttributes, rand_seed)
         selected_data = D.sample(NumDataPoints,replace=True) #Samples datapoints WITH replacement
         C45(selected_data, selected_attributes, T, threshold, C) 
@@ -70,9 +61,7 @@ def ForestClassifier(test_set, forest, C):
     return forest_predicted_values, correct, incorrect 
 
 
-def RandomForest(df_file, NumAttributes, NumDataPoints, NumTrees, rand_seed = 1, threshold = 0.2, restrictionsLoc = None):
-    # vectorizer_main()
-    change_format_main()
+def rf_format_data(df_file, threshold, restrictionsLoc):
     restrictions = None
     try:
         threshold = float(threshold)
@@ -86,91 +75,57 @@ def RandomForest(df_file, NumAttributes, NumDataPoints, NumTrees, rand_seed = 1,
         print(e)
         return
     D, A, initial_T, C = format_data(df_file, restrictions)
+    return D, A, initial_T, C
 
-    ###Evaluation
-    #Shuffles the dataframe in case it is ordered by a value
-    number_folds = 1#10
-    df_shuffled = D.sample(frac=1, random_state= rand_seed)
-    training_set = df_shuffled
+def CreateResultsDF(df_shuffled, C):
+    res_DF = pd.DataFrame(columns = ['Predicted', 'Actual'])
+    actual_column = df_shuffled[C]
+    res_DF = pd.DataFrame(index=df_shuffled.index)
+    res_DF['Actual'] = actual_column.copy()
+    return res_DF
 
-    #Creation of results DataFrame
-    res_DF = CreateResultsDF(df_shuffled, C)
-    predicted_values = []
-    rows = len(df_shuffled)
+def RandomForest(authorName, NumAttributes, NumDataPoints, NumTrees, rand_seed = 1, threshold = 0.2, restrictionsLoc = None):
+    #Generate the data file ###FIX change_format_main
+    # change_format_main()
+    df_file_csv = "./general/change_format_forest_in"
 
-    max_group_size = math.ceil(rows/number_folds)   
+    D, A, initial_T, C = rf_format_data(df_file_csv, threshold, restrictionsLoc)
+
+    # Create the data pool, selecting the 100 from the authoer and 400 from other authors
+    df_shuffled = D.sample(frac=1, random_state= rand_seed) #Shuffles the dataframe in case it is ordered by a value
+    author_df = df_shuffled.loc[df_shuffled[C] == authorName]
+    non_author_df = df_shuffled.loc[df_shuffled[C] != authorName].head(400)
+    training_df = pd.concat([author_df, non_author_df])
+    training_df = training_df.sample(frac=1, random_state= rand_seed)
+
+    # ForestCreation
+    forest = ForestCreation(training_df, initial_T, A, C, NumAttributes, NumDataPoints, NumTrees, rand_seed, threshold)
     
-    #Values used to walk through the cross-section area
-    min = 0
-    max = max_group_size
-
-    group_correct = []
-    group_incorrect = []
-    group_accuracy = []
-    group_error = []
-    #Traversal of the various sections
-    for group in range(0, number_folds):
-        test_set = df_shuffled[min:max]
-        df_top = df_shuffled[0:min]
-        df_bottom = df_shuffled[max:rows]
-        training_set = pd.concat([df_top, df_bottom])
-
-        #Call to generate forest
-        forest = ForestCreation(D, initial_T, A, C, NumAttributes, NumDataPoints, NumTrees, rand_seed, threshold )
-        group_predicted_values, correct, incorrect = ForestClassifier(test_set, forest, C)
-        predicted_values += group_predicted_values
-
-        total_count = correct + incorrect
-        group_correct.append(correct)
-        group_incorrect.append(incorrect)
-        try: 
-            group_accuracy.append( correct/total_count )
-            
-        except ZeroDivisionError as e:
-            ### FIX AVERAGE ACCURACY 
-            group_accuracy.append( 0.0)
-
-        try: 
-            group_error.append( incorrect/total_count )
-        
-        except ZeroDivisionError as e:
-            ### FIX AVERAGE ACCURACY 
-            group_error.append( 0.0)
-
-        min = max
-        max += max_group_size
-
-    res_DF['Predicted'] = pd.Series(predicted_values, index=df_shuffled.index)
+    # Forest Testing will all documents
+    predicted_values, correct, incorrect = ForestClassifier(author_df, forest, C)
+    res_DF = CreateResultsDF(author_df, C)
+    res_DF['Predicted'] = pd.Series(predicted_values, index=author_df.index)
     confusion_matrix = pd.crosstab(res_DF['Actual'], res_DF['Predicted'], rownames=['Actual'], colnames=['Predicted'])
     print(confusion_matrix, "\n")
 
-    #Metrics
-    res_DF['Check'] = np.where((res_DF['Predicted'] == res_DF['Actual']), True, False)
-    correct_predictions = res_DF.Check[res_DF.Check==True].count()
 
-    total_count = sum(group_correct) + sum(group_incorrect)
-    print("Overall accuracy: " + str(sum(group_correct)/total_count))
-    print("Overall error rate: " + str(sum(group_incorrect)/total_count), "\n")
+'''
+Expects the following args, 
+args[1] - authorName
+args[2] - m, number of attributes per tree
+args[3] - k, number of data points used to create each tree (with replacement)
+args[4] - n, number of trees created
+args[5] - rand_seed (optional integer, if none is provided 1 is used)
+args[6] - threshold (optional value between 0 and 1, if non is provided 0.2 is used)
+args[7] - restrictionsFile (optional file of 0 and 1 to indicate inactive columns for splitting)
 
-    print("Average accuracy: " + str( sum(group_accuracy) / len(group_accuracy) ))
-    print("Average error rate: " + str( sum(group_error) / len(group_error) ))
-
-#Expects the following args, 
-#args[1] - Dataset File
-#args[2] - m, number of attributes per tree
-#args[3] - k, number of data points used to create each tree (with replacement)
-#args[4] - n, number of trees created
-#args[5] - rand_seed (optional integer, if none is provided 1 is used)
-#args[6] - threshold (optional value between 0 and 1, if non is provided 0.2 is used)
-#args[7] - restrictionsFile (optional file of 0 and 1 to indicate inactive columns for splitting)
-def random_forest_main():
-    '''
-    Usage: python randomForest.py <DataSetFile.csv> <Attributes per tree> <data points per tree> <number of trees>
+Usage: python randomForest.py <Author Name> <DataSetFile.csv> <Attributes per tree> <data points per tree> <number of trees>
     [<rand_seed>] [<threshold>] [<restrictionFile>]
-    '''
+'''
+def random_forest_main():
     args = sys.argv
-    if len(args) not in [3, 4, 5, 6]: # if length of args is not 3, 4, or 5
-        raise Exception("Error - Usage: python randomForest.py <DataSetFile.csv> <Attributes per tree> <data points per tree> <number of trees>\
+    if len(args) not in [5,6,7,8,9]:
+        raise Exception("Error - Usage: python rf_randomForest.py <Attributes per tree> <data points per tree> <number of trees>\
     [<rand_seed>] [<threshold>] [<restrictionFile>]")
     if len(args) == 5:
         RandomForest(args[1], int(args[2]), int(args[3]), int(args[4])) 

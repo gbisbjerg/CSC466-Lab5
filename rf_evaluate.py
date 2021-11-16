@@ -6,8 +6,8 @@ import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn' https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 import matplotlib.pyplot as plt
 import numpy as np
-from InduceC45 import format_data, C45
-from classifier import classifier
+from rf_InduceC45 import format_data, C45
+from rf_classifier import classifier
 import copy
 
 '''
