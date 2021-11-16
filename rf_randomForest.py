@@ -3,7 +3,6 @@ import os
 import sys
 import json
 import pandas as pd
-
 from change_format import change_format_main
 from textVectorizer import vectorizer_main
 pd.options.mode.chained_assignment = None  # default='warn' https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
@@ -13,22 +12,71 @@ from rf_InduceC45 import format_data, C45
 from rf_classifier import classifier
 import copy
 import random
+import errno
+import json
+
+import time
 
 def AttributeRandSelect(A, NumAttributes, rand_seed):
-    random.seed(rand_seed)
+    # random.seed(rand_seed)
     return random.sample(A, NumAttributes)
 # print(AttributeRandSelect([[1,2],[1,3],[1,4]], 2, 109))
 
-def ForestCreation(D, initial_T, A, C, NumAttributes, NumDataPoints, NumTrees, rand_seed, threshold ):
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
+
+def FolderName(save_trees, save_trees_file_name):
+    existing_trees = 0
+    if(save_trees):
+        author_name = save_trees_file_name[0]
+        attributes_used = str(save_trees_file_name[1])
+        data_points_used = str(save_trees_file_name[2])
+        threshold_used = str(save_trees_file_name[3])
+        folder_name = author_name + "_" + attributes_used + "_" + data_points_used  + "_" + threshold_used
+        forest_folder = 'forest/' + folder_name
+        file = mkdir_p(forest_folder)
+        tree_files = os.listdir(forest_folder)
+        existing_trees = len(tree_files)
+    return existing_trees, tree_files, forest_folder
+
+def ForestCreation(author_df, non_author_df, initial_T, A, C, NumAttributes, NumDataPoints, NumTrees, rand_seed, threshold, save_trees, save_trees_file_name):
+    existing_trees, tree_files, forest_folder = FolderName(save_trees, save_trees_file_name)
     #Dataset Selection/Behavior
     forest = [None] * NumTrees
-    for i in range(0,NumTrees):
+
+    trees = 0
+    #If there are enough trees then skip, or only make the desired remainder
+    for i, tree_file in enumerate(tree_files):
+        print(tree_file)
+        if(trees == NumTrees - 1):
+            break
+        tree_loc = forest_folder + "/" + tree_file
+
+        with open(tree_loc, 'r') as myfile:
+            data=myfile.read()
+            forest[i] = json.loads(data)
+        trees += 1
+
+    #Load the stored trees 
+    for i in range(trees, NumTrees):
+        non_author_df = non_author_df.sample(frac=1).head(400)
+        D = pd.concat([author_df, non_author_df])
+
         T = copy.deepcopy(initial_T)
         selected_attributes = AttributeRandSelect(A, NumAttributes, rand_seed)
         selected_data = D.sample(NumDataPoints,replace=True) #Samples datapoints WITH replacement
         C45(selected_data, selected_attributes, T, threshold, C) 
         forest[i] = T
-        print("tree: ", i)
+        print("tree ", i)
+        if(save_trees):
+            file = open(forest_folder + '/tree{0}.txt'.format(existing_trees),'w+')
+            json. dump(T, file, indent = 4)
+            existing_trees += 1
     return forest
 
 def ForestClassifier(test_set, forest, C): 
@@ -84,25 +132,36 @@ def CreateResultsDF(df_shuffled, C):
     res_DF['Actual'] = actual_column.copy()
     return res_DF
 
-def RandomForest(authorName, NumAttributes, NumDataPoints, NumTrees, rand_seed = 1, threshold = 0.2, restrictionsLoc = None):
+def RandomForest(authorName, NumAttributes, NumDataPoints, NumTrees, rand_seed = 1, threshold = 0.2, save_trees = True, restrictionsLoc = None):
+    print("Start of Run")
+    start = time.time()
+
     #Generate the data file ###FIX change_format_main
     # change_format_main()
     df_file_csv = "./general/change_format_forest_in"
-
     D, A, initial_T, C = rf_format_data(df_file_csv, threshold, restrictionsLoc)
 
     # Create the data pool, selecting the 100 from the authoer and 400 from other authors
     df_shuffled = D.sample(frac=1, random_state= rand_seed) #Shuffles the dataframe in case it is ordered by a value
     author_df = df_shuffled.loc[df_shuffled[C] == authorName]
-    non_author_df = df_shuffled.loc[df_shuffled[C] != authorName].head(400)
-    training_df = pd.concat([author_df, non_author_df])
-    training_df = training_df.sample(frac=1, random_state= rand_seed)
+    non_author_df = df_shuffled.loc[df_shuffled[C] != authorName]
+    # training_df = pd.concat([author_df, non_author_df])
+    # training_df = training_df.sample(frac=1, random_state= rand_seed)
 
+
+    forest_start = time.time()
+    print("Forest Start", forest_start - start)
     # ForestCreation
-    forest = ForestCreation(training_df, initial_T, A, C, NumAttributes, NumDataPoints, NumTrees, rand_seed, threshold)
-    
+    save_trees_file_name = [authorName, NumAttributes, NumDataPoints, threshold]
+    forest = ForestCreation(author_df, non_author_df, initial_T, A, C, NumAttributes, NumDataPoints, NumTrees, rand_seed, threshold, save_trees, save_trees_file_name)
+    forest_end = time.time()
+    print("Forest End", forest_end - start)
+
+
     # Forest Testing will all documents
     predicted_values, correct, incorrect = ForestClassifier(author_df, forest, C)
+    classifier_end = time.time()
+    print("Classifier End", classifier_end - start)
     res_DF = CreateResultsDF(author_df, C)
     res_DF['Predicted'] = pd.Series(predicted_values, index=author_df.index)
     confusion_matrix = pd.crosstab(res_DF['Actual'], res_DF['Predicted'], rownames=['Actual'], colnames=['Predicted'])
