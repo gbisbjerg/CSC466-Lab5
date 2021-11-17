@@ -67,7 +67,7 @@ def ForestCreation(author_df, non_author_df, initial_T, A, C, NumAttributes, Num
         selected_data = D.sample(NumDataPoints,replace=True) #Samples datapoints WITH replacement
         C45(selected_data, selected_attributes, T, threshold, C) 
         forest[i] = T
-        print("tree ", i)
+        #print("tree ", i)
         if(save_trees):
             file = open(forest_folder + '/tree{0}.txt'.format(existing_trees),'w+')
             json. dump(T, file, indent = 4)
@@ -153,14 +153,13 @@ def RandomForest(authorName, NumAttributes, NumDataPoints, NumTrees, save_trees_
     forest_end = time.time()
     print("Forest End", forest_end - start)
 
-
     # Forest Testing with all documents
     classification_set = pd.concat([author_df, non_author_df])
-    predicted_values, correct, incorrect = ForestClassifier(author_df, forest, C)
+    predicted_values, correct, incorrect = ForestClassifier(classification_set, forest, C)
     classifier_end = time.time()
     print("Classifier End", classifier_end - start)
-    res_DF = CreateResultsDF(author_df, C)
-    res_DF['Predicted'] = pd.Series(predicted_values, index=author_df.index)
+    res_DF = CreateResultsDF(classification_set, C)
+    res_DF['Predicted'] = pd.Series(predicted_values, index=classification_set.index)
     confusion_matrix = pd.crosstab(res_DF['Actual'], res_DF['Predicted'], rownames=['Actual'], colnames=['Predicted'])
     print(confusion_matrix, "\n")
 
@@ -178,8 +177,9 @@ args[7] - restrictionsFile (optional file of 0 and 1 to indicate inactive column
 Usage: python randomForest.py <Author Name> <DataSetFile.csv> <Attributes per tree> <data points per tree> <number of trees>
     [<rand_seed>] [<threshold>] [<restrictionFile>]
 '''
-def random_forest_main():
-    args = sys.argv
+def random_forest_main(args=None):
+    if not args: 
+        args = sys.argv
     if len(args) not in [5,6,7,8]:
         raise Exception("Error - Usage: python rf_randomForest.py <Attributes per tree> <data points per tree> <number of trees>\
     [<save trees>] [<threshold>] [<restrictionFile>]")
@@ -194,6 +194,6 @@ def random_forest_main():
     else:
         raise Exception("I messed up my conditions - Greg :)")
 
-if __name__=="__main__":
-    random_forest_main()
+# if __name__=="__main__":
+#     random_forest_main()
 
