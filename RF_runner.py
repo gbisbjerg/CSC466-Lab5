@@ -1,13 +1,16 @@
 
 
 import csv 
-from rf_randomForest import random_forest_main
+from rf_randomForest import RandomForest
 
-with open("TESTING_RF", newline='') as f_in: #read from
+with open("TESTING_RF.csv", newline='') as f_in: #read from
     reader = csv.reader(f_in)
+
     row = next(reader)
-    print("Attribites {} Datapoints {} Trees {}, Threshold {}".format(row[0], row[1], row[2], row[3]))
-    random_forest_main(row[0], row[1], row[2], "T", row[3])
+    while (row):
+        print("Attribites {} Datapoints {} Trees {}, Threshold {}".format(row[0], row[1], row[2], row[3]))
+        RandomForest("AaronPressman", int(row[0]), int(row[1]), int(row[2]), "T", float(row[3]))
+        row = next(reader)
 
 
     
