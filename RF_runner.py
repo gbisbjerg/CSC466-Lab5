@@ -1,14 +1,16 @@
 
 
-import csv 
-from rf_randomForest import random_forest_main
+from csv import reader 
+from rf_randomForest import RandomForest
+import os 
 
-with open("TESTING_RF.csv", newline='') as f_in: #read from
-    reader = csv.reader(f_in)
-    row = next(reader)
-    print("Attribites {} Datapoints {} Trees {}, Threshold {}".format(row[0], row[1], row[2], row[3]))
-    random_forest_main(row[0], row[1], row[2], "T", row[3])
+first_half = ['AaronPressman', 'AlanCrosby', 'AlexanderSmith', 'BenjaminKangLim', 'BernardHickey', 'BradDorfman', 'DarrenSchuettler', 'DavidLawder', 'EdnaFernandes', 'EricAuchard', 'FumikoFujisaki', 'GrahamEarnshaw', 'HeatherScoffield', 'JanLopatka', 'JaneMacartney', 'JimGilchrist', 'JoWinterbottom', 'JoeOrtiz', 'JohnMastrini', 'JonathanBirt', 'KarlPenhaul', 'KeithWeir', 'KevinDrawbaugh', 'KevinMorrison', 'KirstinRidley']
+second_half = ['KouroshKarimkhany', 'LydiaZajc', "LynneO'Donnell", 'LynnleyBrowning', 'MarcelMichelson', 'MarkBendeich', 'MartinWolk', 'MatthewBunce', 'MichaelConnor', 'MureDickie', 'NickLouth', 'PatriciaCommins', 'PeterHumphrey', 'PierreTran', 'RobinSidel', 'RogerFillion', 'SamuelPerry', 'SarahDavison', 'ScottHillis', 'SimonCowell', 'TanEeLyn', 'TheresePoletti', 'TimFarrand', 'ToddNissen', 'WilliamKazer']
+
+for author in second_half:  
+    RandomForest(authorName=author,NumAttributes= 500 ,NumDataPoints= 300, NumTrees= 50, save_trees_flag="T", threshold= 0.1)
 
 
-    
+
+
     
