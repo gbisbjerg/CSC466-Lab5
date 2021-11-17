@@ -8,6 +8,7 @@ first_half = ['AaronPressman', 'AlanCrosby', 'AlexanderSmith', 'BenjaminKangLim'
 second_half = ['KouroshKarimkhany', 'LydiaZajc', "LynneO'Donnell", 'LynnleyBrowning', 'MarcelMichelson', 'MarkBendeich', 'MartinWolk', 'MatthewBunce', 'MichaelConnor', 'MureDickie', 'NickLouth', 'PatriciaCommins', 'PeterHumphrey', 'PierreTran', 'RobinSidel', 'RogerFillion', 'SamuelPerry', 'SarahDavison', 'ScottHillis', 'SimonCowell', 'TanEeLyn', 'TheresePoletti', 'TimFarrand', 'ToddNissen', 'WilliamKazer']
 
 for author in second_half:  
+    print("\nauthor ", author)
     RandomForest(authorName=author,NumAttributes= 500 ,NumDataPoints= 300, NumTrees= 50, save_trees_flag="T", threshold= 0.1)
 
 
