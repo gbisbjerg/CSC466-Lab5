@@ -64,14 +64,9 @@ def makeWordCount_CSV(out_file, word_file_count):
         for key, value in sorted(word_file_count.items(),key=lambda item: item[1]):
             f.write("%s,%s\n"%(key, value))
 
-def main():
-    #Get the arguments provided from the user
-    args = parse_args()
-    text_folder = args.text_folder
-    out_file = getOutFile(args)
-
+def GenerateWordCount(directory = "C50", out_file = "word_file_count.csv"):
     #Generates a list of all the paths to the text files contained 
-    listOfFiles = getListOfFiles(text_folder)
+    listOfFiles = getListOfFiles(directory)
     
     word_file_count = {}
     for file in listOfFiles:
@@ -81,11 +76,3 @@ def main():
 
     word_file_count.pop("", None)
     makeWordCount_CSV(out_file, word_file_count)
-
-    #0.015 * len()
-
-
-
-
-if __name__ == "__main__":
-    main()

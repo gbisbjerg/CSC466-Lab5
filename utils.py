@@ -1,6 +1,7 @@
 import os 
 import string
 import nltk
+import errno
 
 def getListOfFiles(dirName):
     # create a list of file and sub directories 
@@ -19,7 +20,6 @@ def getListOfFiles(dirName):
                 allFiles.append(fullPath)
 
     return allFiles  
-
 
 def textCleaning(file_):
     lemma = nltk.wordnet.WordNetLemmatizer()
@@ -46,4 +46,12 @@ def getGroundTruth(dirName, toCSV = False):
             txt_file = file.split('/')[-1]
             groundTruthDic[txt_file] = author
     return groundTruthDic
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 

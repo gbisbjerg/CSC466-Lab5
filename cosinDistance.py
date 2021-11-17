@@ -1,5 +1,8 @@
 from textVectorizer import put_stop_words_in_list, create_word_count_dict, create_df
+from change_format import transform_df_to_forest_input
+from utils import mkdir_p
 import pandas as pd
+from StopWords import GenerateWordCount
 import argparse
 import numpy as np
 import csv
@@ -7,6 +10,7 @@ import sys
 import math
 from utils import getListOfFiles, textCleaning
 from itertools import combinations
+import os.path
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -87,13 +91,17 @@ def cosin_distance(TF_IDF_DF, similarity_csv_name):
         print("Calculating cosin for ", file)
         TF_IDF_quere = np.array(TF_IDF_DF.loc[file, :]).astype(float)
 
-        cosin_bot_q = np.sum(np.square(TF_IDF_quere))
+        cosin_bot_q = np.sum(TF_IDF_quere**2)
         
         i = j
         for index, row in TF_IDF_DF.iloc[j:].iterrows():
-            TF_IDF_document = np.array(row).astype(float)
-            cosin_top = np.sum(TF_IDF_quere * TF_IDF_document)
-            cosin_bottom = math.sqrt( np.sum(np.square(TF_IDF_document)) * cosin_bot_q )
+            TF_IDF_document =  np.asarray(row, dtype=np.float64) #np.array(row).astype(float)
+
+            # cosin_top = np.sum(TF_IDF_quere * TF_IDF_document)
+            cosin_top = TF_IDF_quere.ravel().dot(TF_IDF_document.ravel())
+
+            cosin_bottom = math.sqrt( np.sum(TF_IDF_document**2) * cosin_bot_q )
+            
             total[i] = np.true_divide(cosin_top, cosin_bottom)
             i += 1
 
@@ -103,7 +111,60 @@ def cosin_distance(TF_IDF_DF, similarity_csv_name):
         total[j] = 'N/A'
         j += 1
 
+### vvv For random forest - This should be relocated to a better spot
+def stop_words_7000(wordFileCount): 
+    file = open(wordFileCount, "r")
+    csv_reader = csv.reader(file)
+    words_from_csv = []
+    
+    for row in csv_reader:
+        words_from_csv.append(row)
 
+    offEnd = len(words_from_csv) - 70
+    stop_words_start = [word[0] for word in words_from_csv[offEnd:]]
+    stop_words_end = [word[0] for word in words_from_csv[0:offStart]]
+    stop_words = stop_words_start + stop_words_end
+    print(len(stop_words))
+    return stop_words
+
+
+def rf_format_TF_IDF(author, directory = "C50"):
+    file = mkdir_p("forest/rf")
+    #Get list of files from the directory
+    print("Step 1: Getting list of files in directory")
+    listOfFiles = getListOfFiles(directory)
+    short_files = [file.split("/")[-1] for file in listOfFiles]
+    NUMBER_OF_FILES_RUN = len(listOfFiles)
+
+    #Generate initial vectorized DF
+    print("Step 2: Creating initial vectorized DF")
+    if( not os.path.isfile("forest/rf/word_file_count.csv") ):
+        GenerateWordCount(directory, "forest/rf/word_file_count.csv")
+    if( not os.path.isfile("forest/rf/rf-vectorDF.csv") ):
+        stop_words = stop_words_7000("forest/rf/word_file_count.csv")   ###CHANGE THIS
+        word_dict = create_word_count_dict(directory, stop_words)
+        vectorized_df = create_df(word_dict)
+        vectorized_df.to_csv("forest/rf/rf-vectorDF.csv", sep=',')
+
+    #Generate the normalized DF
+    print("Step 3: Creating the normalized DF")
+    if( not os.path.isfile("forest/rf/rf--normalizedTermDF.csv") ):
+        normalizedTermDF = normalizedTermFreq("forest/rf/rf-vectorDF.csv", "forest/rf/rf--normalizedTermDF.csv")    
+
+    #Generate the TF-IDF DF which contains the wij values
+    print("Step 4: Creating the TF-IDF DF")
+    if( not os.path.isfile("forest/rf/rf-TF_IDF.csv") ):
+        idf_dic = inverseDocumentFrequency_dic(NUMBER_OF_FILES_RUN, "forest/rf/word_file_count.csv")
+        Create_TF_IDF_DF("forest/rf/rf--normalizedTermDF.csv", idf_dic, "forest/rf/rf-TF_IDF.csv")
+
+    #Transforming CSV to forest input
+    print("Step 5: Converting to forest input format")
+    if( not os.path.isfile("forest/rf/rf-TF_IDF{}.csv".format(author)) ):
+        transform_df_to_forest_input("forest/rf/rf-TF_IDF.csv", directory, author, "forest/rf/rf-TF_IDF{}.csv".format(author))
+
+    return "forest/rf/rf--normalizedTermDF{}.csv".format(author)
+
+### ^^^ For random forest - This should be relocated to a better spot
 
 def main():
     print("Step 1: Getting args from user")
@@ -150,4 +211,3 @@ def main():
 
     # similarity_df.to_csv("cosin_C50", sep=',')
     # print("DONE! :)")
-main()
