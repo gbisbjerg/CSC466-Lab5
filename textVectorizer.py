@@ -23,11 +23,12 @@ def create_word_count_dict(dir_, stop_words):
     #     filename = os.fsdecode(file)
     listOfFiles = getListOfFiles(dir_)
     
-
+    i = 0
     for file in listOfFiles:
-
+        
         lines = textCleaning(file)
         filename = file.split("/")[-1]
+        #print("filename", i)
         # #print("filename", filename)
         all_filenames.append(filename)
         ##print("filename", filename)
@@ -38,7 +39,8 @@ def create_word_count_dict(dir_, stop_words):
             if (len(w) > 0) and (w not in stop_words):
                 if w in list(unique_words.keys()):
                     if filename in list(unique_words[w].keys()): 
-                        unique_words[w][filename] += 1 
+                        if unique_words[w][filename] < 500: 
+                            unique_words[w][filename] += 1 
                     else: 
                         unique_words[w][filename] = 1 
 
@@ -47,6 +49,7 @@ def create_word_count_dict(dir_, stop_words):
 
             else:
                 continue
+        i+=1 
 
     return unique_words
 
