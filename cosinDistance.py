@@ -14,6 +14,64 @@ import os.path
 
 np.set_printoptions(threshold=sys.maxsize)
 
+
+### vvv For random forest - This should be relocated to a better spot
+def stop_words_7000(wordFileCount): 
+    file = open(wordFileCount, "r")
+    csv_reader = csv.reader(file)
+    words_from_csv = []
+    
+    for row in csv_reader:
+        words_from_csv.append(row)
+
+    offStart = 39887
+    offEnd = len(words_from_csv) - 70
+    stop_words_start = [word[0] for word in words_from_csv[offEnd:]]
+    stop_words_end = [word[0] for word in words_from_csv[0:offStart]]
+    stop_words = stop_words_start + stop_words_end
+    print(len(stop_words))
+    return stop_words
+
+
+def rf_format_TF_IDF(author, directory = "C50"):
+    file = mkdir_p("forest/rf")
+    #Get list of files from the directory
+    print("Step 1: Getting list of files in directory")
+    listOfFiles = getListOfFiles(directory)
+    short_files = [file.split("/")[-1] for file in listOfFiles]
+    NUMBER_OF_FILES_RUN = len(listOfFiles)
+
+    #Generate initial vectorized DF
+    print("Step 2: Creating initial vectorized DF")
+    if( not os.path.isfile("forest/rf/word_file_count.csv") ):
+        GenerateWordCount(directory, "forest/rf/word_file_count.csv")
+    if( not os.path.isfile("forest/rf/rf-vectorDF.csv") ):
+        stop_words = stop_words_7000("forest/rf/word_file_count.csv")   ###CHANGE THIS
+        word_dict = create_word_count_dict(directory, stop_words)
+        vectorized_df = create_df(word_dict)
+        vectorized_df.to_csv("forest/rf/rf-vectorDF.csv", sep=',')
+
+    #Generate the normalized DF
+    print("Step 3: Creating the normalized DF")
+    if( not os.path.isfile("forest/rf/rf--normalizedTermDF.csv") ):
+        normalizedTermDF = normalizedTermFreq("forest/rf/rf-vectorDF.csv", "forest/rf/rf--normalizedTermDF.csv")    
+
+    #Generate the TF-IDF DF which contains the wij values
+    print("Step 4: Creating the TF-IDF DF")
+    if( not os.path.isfile("forest/rf/rf-TF_IDF.csv") ):
+        idf_dic = inverseDocumentFrequency_dic(NUMBER_OF_FILES_RUN, "forest/rf/word_file_count.csv")
+        Create_TF_IDF_DF("forest/rf/rf--normalizedTermDF.csv", idf_dic, "forest/rf/rf-TF_IDF.csv")
+
+    #Transforming CSV to forest input
+    print("Step 5: Converting to forest input format")
+    if( not os.path.isfile("forest/rf/rf-TF_IDF{}.csv".format(author)) ):
+        transform_df_to_forest_input("forest/rf/rf-TF_IDF.csv", directory, author, "forest/rf/rf-TF_IDF{}.csv".format(author))
+
+    return "forest/rf/rf-TF_IDF{}.csv".format(author)
+
+### ^^^ For random forest - This should be relocated to a better spot
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--text_folder", help="folder containing all test files of interest, ex. C50", type=str, required=True)
@@ -81,6 +139,7 @@ def Create_TF_IDF_DF(normalized_csv_name, word_file_count_dic, TF_IDF_csv_name):
 def cosin_distance(TF_IDF_DF, similarity_csv_name):
     f_out = open(similarity_csv_name, 'w')
     indexNamesArr = list(TF_IDF_DF.index.values)
+    print("indexNamesArr", len(indexNamesArr))
     header = ','.join(['%s' % num for num in indexNamesArr])
     f_out.write(header + '\n')
 
@@ -91,16 +150,17 @@ def cosin_distance(TF_IDF_DF, similarity_csv_name):
         print("Calculating cosin for ", file)
         TF_IDF_quere = np.array(TF_IDF_DF.loc[file, :]).astype(float)
 
-        cosin_bot_q = np.sum(TF_IDF_quere**2)
-        
+        q_transpose = np.transpose(TF_IDF_quere)
+        cosin_bot_q = np.dot(TF_IDF_quere, q_transpose)
         i = j
         for index, row in TF_IDF_DF.iloc[j:].iterrows():
             TF_IDF_document =  np.asarray(row, dtype=np.float64) #np.array(row).astype(float)
 
             # cosin_top = np.sum(TF_IDF_quere * TF_IDF_document)
-            cosin_top = TF_IDF_quere.ravel().dot(TF_IDF_document.ravel())
+            cosin_top = np.dot(TF_IDF_document, q_transpose)
 
-            cosin_bottom = math.sqrt( np.sum(TF_IDF_document**2) * cosin_bot_q )
+            d_transpose = np.transpose(TF_IDF_document)
+            cosin_bottom = math.sqrt(np.dot(TF_IDF_document, d_transpose) * cosin_bot_q)
             
             total[i] = np.true_divide(cosin_top, cosin_bottom)
             i += 1
@@ -111,60 +171,14 @@ def cosin_distance(TF_IDF_DF, similarity_csv_name):
         total[j] = 'N/A'
         j += 1
 
-### vvv For random forest - This should be relocated to a better spot
-def stop_words_7000(wordFileCount): 
-    file = open(wordFileCount, "r")
-    csv_reader = csv.reader(file)
-    words_from_csv = []
-    
-    for row in csv_reader:
-        words_from_csv.append(row)
+def matrix_mirror( cosin_distance_csv, full_cosin_matrix_name):
+    half_distance_df = pd.io.parsers.read_csv(cosin_distance_csv, sep=',', index_col=0)
 
-    offEnd = len(words_from_csv) - 70
-    stop_words_start = [word[0] for word in words_from_csv[offEnd:]]
-    stop_words_end = [word[0] for word in words_from_csv[0:offStart]]
-    stop_words = stop_words_start + stop_words_end
-    print(len(stop_words))
-    return stop_words
-
-
-def rf_format_TF_IDF(author, directory = "C50"):
-    file = mkdir_p("forest/rf")
-    #Get list of files from the directory
-    print("Step 1: Getting list of files in directory")
-    listOfFiles = getListOfFiles(directory)
-    short_files = [file.split("/")[-1] for file in listOfFiles]
-    NUMBER_OF_FILES_RUN = len(listOfFiles)
-
-    #Generate initial vectorized DF
-    print("Step 2: Creating initial vectorized DF")
-    if( not os.path.isfile("forest/rf/word_file_count.csv") ):
-        GenerateWordCount(directory, "forest/rf/word_file_count.csv")
-    if( not os.path.isfile("forest/rf/rf-vectorDF.csv") ):
-        stop_words = stop_words_7000("forest/rf/word_file_count.csv")   ###CHANGE THIS
-        word_dict = create_word_count_dict(directory, stop_words)
-        vectorized_df = create_df(word_dict)
-        vectorized_df.to_csv("forest/rf/rf-vectorDF.csv", sep=',')
-
-    #Generate the normalized DF
-    print("Step 3: Creating the normalized DF")
-    if( not os.path.isfile("forest/rf/rf--normalizedTermDF.csv") ):
-        normalizedTermDF = normalizedTermFreq("forest/rf/rf-vectorDF.csv", "forest/rf/rf--normalizedTermDF.csv")    
-
-    #Generate the TF-IDF DF which contains the wij values
-    print("Step 4: Creating the TF-IDF DF")
-    if( not os.path.isfile("forest/rf/rf-TF_IDF.csv") ):
-        idf_dic = inverseDocumentFrequency_dic(NUMBER_OF_FILES_RUN, "forest/rf/word_file_count.csv")
-        Create_TF_IDF_DF("forest/rf/rf--normalizedTermDF.csv", idf_dic, "forest/rf/rf-TF_IDF.csv")
-
-    #Transforming CSV to forest input
-    print("Step 5: Converting to forest input format")
-    if( not os.path.isfile("forest/rf/rf-TF_IDF{}.csv".format(author)) ):
-        transform_df_to_forest_input("forest/rf/rf-TF_IDF.csv", directory, author, "forest/rf/rf-TF_IDF{}.csv".format(author))
-
-    return "forest/rf/rf--normalizedTermDF{}.csv".format(author)
-
-### ^^^ For random forest - This should be relocated to a better spot
+    i = 1
+    for data, row in half_distance_df.T.iteritems():
+        half_distance_df[data][i:] = half_distance_df.loc[data].values[i:]
+        i += 1
+    half_distance_df.to_csv(full_cosin_matrix_name, sep=',')
 
 def main():
     print("Step 1: Getting args from user")
@@ -193,11 +207,11 @@ def main():
     print("Step 5: Creating the inverse document frequence DF")
     idf_dic = inverseDocumentFrequency_dic(NUMBER_OF_FILES_RUN)
     
-    # idf_file = open("cosin-idf", "w")
-    # writer = csv.writer(idf_file)
-    # for key, value in idf_dic.items():
-    #     writer.writerow([key, value])
-    # idf_file.close()
+    idf_file = open("cosin-idf", "w")
+    writer = csv.writer(idf_file)
+    for key, value in idf_dic.items():
+        writer.writerow([key, value])
+    idf_file.close()
 
     #Generate the TF-IDF DF which contains the wij values
     print("Step 6: Creating the TF-IDF DF")
@@ -206,8 +220,13 @@ def main():
     #Generate the similiarty DF
     print("Step 7: Creating the Similarity DF")
 
-    TF_IDF_DF = pd.read_csv('cosin-TF_IDF', index_col=0)
-    cosin_distance(TF_IDF_DF,"cosin_C50")
+    TF_IDF_DF = pd.read_csv('Cosin_Run/cosin-TF_IDF', index_col=0)
+    cosin_distance(TF_IDF_DF,"Cosin_Run/cosin_C50")
 
-    # similarity_df.to_csv("cosin_C50", sep=',')
-    # print("DONE! :)")
+    matrix_mirror( "Cosin_Run/cosin_C50", "Cosin_Run/full_cosin_C50")
+
+    print("DONE! :)")
+
+
+if __name__=="__main__":
+    main()

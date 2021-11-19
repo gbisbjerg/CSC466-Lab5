@@ -47,7 +47,7 @@ def ForestCreation(author_df, non_author_df, initial_T, A, C, NumAttributes, Num
     trees = 0
     #If there are enough trees then skip, or only make the desired remainder
     for i, tree_file in enumerate(tree_files):
-        print(tree_file)
+        # print(tree_file)
         if(trees == NumTrees - 1):
             break
         tree_loc = forest_folder + "/" + tree_file
@@ -177,9 +177,9 @@ args[7] - restrictionsFile (optional file of 0 and 1 to indicate inactive column
 Usage: python randomForest.py <Author Name> <DataSetFile.csv> <Attributes per tree> <data points per tree> <number of trees>
     [<rand_seed>] [<threshold>] [<restrictionFile>]
 '''
-def random_forest_main(args=None):
-    if not args: 
-        args = sys.argv
+def random_forest_main():
+
+    args = sys.argv
     if len(args) not in [5,6,7,8]:
         raise Exception("Error - Usage: python rf_randomForest.py <Attributes per tree> <data points per tree> <number of trees>\
     [<save trees>] [<threshold>] [<restrictionFile>]")
@@ -194,6 +194,6 @@ def random_forest_main(args=None):
     else:
         raise Exception("I messed up my conditions - Greg :)")
 
-# if __name__=="__main__":
-#     random_forest_main()
+if __name__=="__main__":
+    random_forest_main()
 
