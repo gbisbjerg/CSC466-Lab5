@@ -187,7 +187,7 @@ def RandomForest(authorName, NumAttributes, NumDataPoints, NumTrees, save_trees_
     index = res_DF.index
     document_index = []
     for i in index:
-        document_index.append(documents[i])
+        document_index.append(documents[i+3])
     res_DF['Document'] = document_index
     res_DF = res_DF.set_index('Document')
 
