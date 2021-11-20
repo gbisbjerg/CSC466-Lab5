@@ -51,7 +51,19 @@ RFAuthorship.py
 	python3 RFAuthorship.py AaronPressman 3 5 3 T 0.1
 
 knnAuthorship.py
-	
+    
+    Uses K-nearest forest to create predictions based on authot data 
+    usage: knnAuthorship.py [-h] --text_vectorizer_file TEXT_VECTORIZER_FILE --k K --metric METRIC
+
+    optional arguments:
+    -h, --help            show this help message and exit
+    --text_vectorizer_file TEXT_VECTORIZER_FILE
+                            file containing text vectorization
+    --k K                 k value
+    --metric METRIC       Choose: 1 for Okapi, 2 for Cosine
+
+    Example: 
+	python3 knnAuthorship.py --text_vectorizer_file vectorDF.csv --k 5 --metric 2
 
 
 classfierEvaluation.py 
