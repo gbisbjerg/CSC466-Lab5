@@ -6,9 +6,12 @@ import json
 import numpy as np
 import random
 from pandas.core.tools.numeric import to_numeric
+from cosinDistance import cosin_main
 from utils import *
 import csv 
 from collections import Counter
+from okapi import okapi_main
+from cosinDistance import cosin_main
 
 authors = ["AaronPressman", "AlanCrosby", "AlexanderSmith", "BenjaminKangLim", "BernardHickey", "BradDorfman", "DarrenSchuettler", "DavidLawder", "EdnaFernandes", "EricAuchard", "FumikoFujisaki", "GrahamEarnshaw", "HeatherScoffield", "JanLopatka", "JaneMacartney", "JimGilchrist", "JoWinterbottom", "JoeOrtiz", "JohnMastrini", "JonathanBirt", "KarlPenhaul", "KeithWeir", "KevinDrawbaugh", "KevinMorrison", "KirstinRidley", "KouroshKarimkhany", "LydiaZajc", "LynneO'Donnell", "LynnleyBrowning", "MarcelMichelson", "MarkBendeich", "MartinWolk", "MatthewBunce", "MichaelConnor", "MureDickie", "NickLouth", "PatriciaCommins", "PeterHumphrey", "PierreTran", "RobinSidel", "RogerFillion", "SamuelPerry", "SarahDavison", "ScottHillis", "SimonCowell", "TanEeLyn", "TheresePoletti", "TimFarrand", "ToddNissen", "WilliamKazer"]
 
@@ -20,7 +23,7 @@ def classifier_knn(k, type_):
     ground_truth = getGroundTruth("C50", toCSV = False)
     filenames = []
     distance_df = None 
-    if type == "okapi": 
+    if type_ == "okapi": 
         with open( "knn/distance_filenames.csv", newline='') as f:
             reader = csv.reader(f)
             filenames = next(reader)
@@ -93,26 +96,52 @@ def Precision(truePos, falsePos):
 def Fmeasure(precision, recall):
   f_measure = round (( 2 * ((precision * recall) / (precision + recall))), 2)
   print("f-measure: " + str(f_measure))
+  return f_measure
 
 
 
-def output(final_lst, final_df):
+def output(final_lst, final_df, type_):
     result_np = np.asarray(final_lst)
     all_ = final_df.to_numpy().sum() # counts all elements (all counts in result df)
     correct = np.trace(result_np) # counts diagonol elements 
-
+    
+    all_authors = []
+    all_hits = []
+    all_strikes = []
+    all_misses = []
+    all_recall =[]
+    all_precision = []
+    all_fmeasure = []
     for author in final_df: 
+        all_authors.append(author)
         print("\nAuthor: ",author)
+
         true_pos = final_df.loc[author, author]
         print("Hits: ", true_pos)
+        all_hits.append(true_pos)
+
         false_pos = final_df[author].sum() - true_pos
         print("Strikes: ",false_pos) 
+        all_strikes.append(false_pos)
+
         false_neg = final_df.loc[author].sum() - true_pos
         print("Misses: ", false_neg)
+        all_misses.append(false_neg)
         
         recall = Recall(true_pos, false_neg)
+        all_recall.append(recall)
+
         precision = Precision(true_pos, false_pos)
-        Fmeasure(precision, recall)
+        all_precision.append(precision)
+
+        fmeasure = Fmeasure(precision, recall)
+        all_fmeasure.append(fmeasure)
+
+    c = ['Hits', 'Strikes', 'Misses', 'Recall','Precision', 'Fmeasure' ]
+    out_df = pd.DataFrame(list(zip( all_hits, all_strikes, all_misses, all_recall, all_precision, all_fmeasure)),columns =c, index=all_authors)
+    print(out_df)
+    filename_out = 'knn/results_df_' +type_ + '.csv'
+    out_df.to_csv(filename_out)
 
 
         
@@ -134,8 +163,21 @@ def output(final_lst, final_df):
 
  
 def main():
-    #type_ = input("Insert Type:(okapi or cosin)")
-    type_ =  "okapi" #"cosin"
+    
+    type_int =  int(input("Pick: \n\t1 = Okapi\n\t2 for Cosin Distance") )
+    if type_int == 1: 
+        type_ = "okapi"
+    else: 
+        type_ = "cosin"
+
+
+    dir = "C50"
+
+    if type_ == "okapi": 
+        okapi_main(dir)
+    else: 
+        cosin_main()
+        
 
     for k in range(2,3):
         print("Type:", type_)
@@ -143,7 +185,7 @@ def main():
         
     
         lst_of_lsts, df = classifier_knn( k, type_)
-        output(lst_of_lsts, df)
+        output(lst_of_lsts, df, type_)
         
         df.to_csv('knn/out.csv')
 

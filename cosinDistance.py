@@ -180,7 +180,7 @@ def matrix_mirror( cosin_distance_csv, full_cosin_matrix_name):
         i += 1
     half_distance_df.to_csv(full_cosin_matrix_name, sep=',')
 
-def main():
+def cosin_main():
     print("Step 1: Getting args from user")
     #Get the arguments provided from the user
     args = parse_args()
@@ -228,5 +228,4 @@ def main():
     print("DONE! :)")
 
 
-if __name__=="__main__":
-    main()
+

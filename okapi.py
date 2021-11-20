@@ -124,11 +124,13 @@ def okapi(combos, word_dict, df, doc_lengths, avdl, n, short_files):
 
 # STEP 3 
 
-def main():
+def okapi_main(dir=None):
     # MATRIXES ALL WORDS IN ALL FILES 
     # matrix = get_matrix() # vectorize one og
+    if dir ==None: 
+        dir = "C50"
 
-    dir = "good_test"# "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/C50/C50test/AaronPressman"#"C50"
+    # "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/C50/C50test/AaronPressman"#"C50"
     #dir = "/Users/sophiaparrett/Desktop/466/lab5/CSC466-Lab5/small_test"
     #print("before short files")
     listOfFiles = getListOfFiles(dir)
@@ -245,4 +247,4 @@ def main():
 
 
 
-main()
+
