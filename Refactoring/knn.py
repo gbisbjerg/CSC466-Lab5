@@ -32,15 +32,15 @@ def document_lengths(df):
 
 
 def short_files(df): 
-    print("short files", )
+    #print("short files", )
     all_files = []
     for index, row in df.iterrows(): 
-        print("index", index)
+        #print("index", index)
         all_files.append(index)
     # print("ALL FILS", all_files)
     # f = [file_.split("/")[-1] for file_ in all_files]
     # print(f)
-    print(all_files, type(all_files))
+    #print(all_files, type(all_files))
     return all_files
 
 
@@ -107,10 +107,10 @@ def Most_Common(lst):
 # document124, Sam.     John
 # document345, Kate.    Kate
 def knn(distance_df, k, filenames):
-    print(type(filenames))
-    print("distance df", distance_df)
+    #print(type(filenames))
+    #print("distance df", distance_df)
     ground_truth = getGroundTruth("C50", toCSV = False)
-    print("ground truth", ground_truth)
+    #print("ground truth", ground_truth)
     actual_list = []
     predict_list = []
     np.fill_diagonal(distance_df.values, -100000)
@@ -118,7 +118,7 @@ def knn(distance_df, k, filenames):
 
     for filename in distance_df.iterrows():
         filename = filename[0]
-        print("filename", filename)
+        #print("filename\n", filename)
         distance_list = list(distance_df.loc[ filename, : ])
         distance_list_np = np.array(distance_list)
         largest = distance_list_np.argsort()[::-1][:k]
@@ -132,8 +132,14 @@ def knn(distance_df, k, filenames):
             real = ground_truth[filename]
         actual_list.append(real)
 
-
-    predictions_df = pd.DataFrame(list(zip(filenames, actual_list, predicted_list)),columns =['Filename', 'Actual', 'Predicted'])
+    #print("predict", predict_list, len(predict_list))
+    #print("actual" , actual_list, len(actual_list))
+    #print("filenames", filenames, len(filenames))
+    predictions_df  = pd.DataFrame(
+    {'Filename': filenames,
+     'Actual': actual_list,
+     'Predicted': predict_list
+    })
     return predictions_df
 
 
@@ -158,7 +164,7 @@ def main():
     predictions_df = knn(df, args.k, abrv_files)
     predictions_df = predictions_df.set_index('Filename')
     predictions_df.to_csv("predictions_{}_out.csv".format(metric))
-    print(predictions_df)
+    #print(predictions_df)
 
 
 

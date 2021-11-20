@@ -139,7 +139,7 @@ def Create_TF_IDF_DF(normalized_csv_name, word_file_count_dic, TF_IDF_csv_name):
 def cosin_distance(TF_IDF_DF, similarity_csv_name):
     f_out = open(similarity_csv_name, 'w')
     indexNamesArr = list(TF_IDF_DF.index.values)
-    print("indexNamesArr", len(indexNamesArr))
+    #print("indexNamesArr", len(indexNamesArr))
     header = ','.join(['%s' % num for num in indexNamesArr])
     f_out.write(header + '\n')
 
@@ -147,7 +147,7 @@ def cosin_distance(TF_IDF_DF, similarity_csv_name):
 
     j = 0
     for file in indexNamesArr:
-        print("Calculating cosin for ", file)
+        #print("Calculating cosin for ", file)
         TF_IDF_quere = np.array(TF_IDF_DF.loc[file, :]).astype(float)
 
         q_transpose = np.transpose(TF_IDF_quere)
@@ -187,7 +187,7 @@ def cosin_main(vector_file):
     matrix_mirror( "cosin_C50", "full_cosin_C50")
                                             # out to KNN 
 
-    print("DONE! :)")
+    #print("DONE! :)")
 
 
 
