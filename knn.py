@@ -1,4 +1,5 @@
-import sys 
+import sys
+from numpy.core.arrayprint import _make_options_dict 
 import pandas as pd 
 import math 
 import json 
@@ -6,160 +7,148 @@ import numpy as np
 import random
 from pandas.core.tools.numeric import to_numeric
 from utils import *
+import csv 
+from collections import Counter
+
+authors = ["AaronPressman", "AlanCrosby", "AlexanderSmith", "BenjaminKangLim", "BernardHickey", "BradDorfman", "DarrenSchuettler", "DavidLawder", "EdnaFernandes", "EricAuchard", "FumikoFujisaki", "GrahamEarnshaw", "HeatherScoffield", "JanLopatka", "JaneMacartney", "JimGilchrist", "JoWinterbottom", "JoeOrtiz", "JohnMastrini", "JonathanBirt", "KarlPenhaul", "KeithWeir", "KevinDrawbaugh", "KevinMorrison", "KirstinRidley", "KouroshKarimkhany", "LydiaZajc", "LynneO'Donnell", "LynnleyBrowning", "MarcelMichelson", "MarkBendeich", "MartinWolk", "MatthewBunce", "MichaelConnor", "MureDickie", "NickLouth", "PatriciaCommins", "PeterHumphrey", "PierreTran", "RobinSidel", "RogerFillion", "SamuelPerry", "SarahDavison", "ScottHillis", "SimonCowell", "TanEeLyn", "TheresePoletti", "TimFarrand", "ToddNissen", "WilliamKazer"]
+
+def Most_Common(lst):
+    data = Counter(lst)
+    return data.most_common(1)[0][0]
+
+def classifier_knn(k, type_):
+    ground_truth = getGroundTruth("C50", toCSV = False)
+    filenames = []
+    distance_df = None 
+    if type == "okapi": 
+        with open( "knn/distance_filenames.csv", newline='') as f:
+            reader = csv.reader(f)
+            filenames = next(reader)
+
+        distance_df = pd.read_csv("knn/distance_filenames.csv")
+
+    else: # cosin 
+        with open( "knn/full_cosin_C50", newline='') as f:
+            reader = csv.reader(f)
+            filenames = next(reader)
+            filenames.remove('')
+
+        distance_df = pd.read_csv("knn/full_cosin_C50")
+        distance_df = distance_df.iloc[: , 1:]
 
 
-def is_num(D): 
-  num = []
-  cat = []
-  for col in D.columns:
-    if int(D.at[0,col]) == 0: 
-        num.append(col)
-    else: 
-        cat.append(col)
-  return (num, cat)
 
-def prepare_D_knn(training_file, restrictions_list): 
-    data = pd.read_csv(training_file)
-    D = pd.DataFrame(data) #See if you want to do a multi-hot encoding structure for ease of use 
-    n = is_num(D)
-    value = D.iloc[1][0]
-    numbers_list = D.copy()
-    numbers_list = list(numbers_list.iloc[0])
-    D = D.iloc[2:]
-    A = list(D)
-    ignore_list = []
-    ignore_list.append(value)
+    np.fill_diagonal(distance_df.values, -100000)
+    # num_files = len(filenames)
+    result = [[0 for j in range(50)] for i in range(50)]
+    #authors = [ground_truth[x] for x in filenames]
 
-    for i in range(len(numbers_list)):
-        if type(numbers_list[i]) != float: 
-            if int(numbers_list[i]) == -1: 
-                ignore_list.append(A[i])
+    ##print("K", k)
+    for i in range(len(distance_df)):
+        #print("i", i)
+        distance_list = list(distance_df.loc[ i, : ])
+        #print("1", distance_list)
+        distance_list_np = np.array(distance_list)
+        #print("2", distance_list_np)
+        ##print("K", k, type(k))
+        largest = distance_list_np.argsort()[::-1][:k]
+        #print("3", largest)
+        predicted_list = np.array([ground_truth[filenames[x]] for x in largest])
+        #print("predicted list", predicted_list)
+        prediction = Most_Common(predicted_list)
+        #print("prediction", prediction)
+        prediction_idx = authors.index(prediction)
+        #print("prediction idx", prediction_idx)
+        real = ground_truth[filenames[i]]
+        #print("real", real)
+        real_idx = authors.index(real)
+        ##print("real idx", real_idx)
+        result[real_idx][prediction_idx] += 1  
+        # exit()
 
-        if len(restrictions_list) > 0: 
-            if (int(restrictions_list[i]) == 0): 
-                ignore_list.append(A[i])
-        i+=1 
+    ##print("result\n", result)
+    final_df = pd.DataFrame(result)
+    final_df.columns = authors 
+    final_df.index = authors 
+    
 
-    D = D[[c for c in D if c not in ignore_list] + [value]]
-    A = list(D)
-    # print("A\n", A)
-    # print("class in D before C45\n ", D["class"].unique())
 
-    return n, D, A
+    
 
-def classifier_knn(D, k, is_numeric, class_labels):
-    D = D.reset_index(drop=True)
-    D_num = D[is_numeric[0]]
-    D_cat =  D[is_numeric[1][:-1]]
-    D_num = D_num.apply(to_numeric)
-    D_num = (D_num - D_num.min())/(D_num.max()-D_num.min())
-    predicted = []
-    for i in range(len(D)):
-        if not D_cat.empty:
-            a = np.array(D_cat[D_cat.index==i])[0]
-            cat = np.sum(np.array(D_cat) != a, axis =1)/(len(is_numeric[1]) -1)
-        else:
-            cat = 0 
-        if not D_num.empty:
-            a = np.array(D_num[D_num.index==i])[0]
-            num = np.sqrt(np.sum(np.square(np.subtract(np.array(D_num), a)), axis =1))
-        else:
-            num = 0
+    ##print(final_df)
+    
+    return result, final_df
 
-        dist = (cat + num) 
-        x = D[D.columns[-1]].to_list()
 
-        data = {'Distance': dist, "Real": x}
-        df = pd.DataFrame(data)
-        df = df.sort_values(by = ['Distance']).reset_index(drop=True)
-        prediction = df[1:k+1]['Real'].value_counts().index[0]
-        predicted.append(prediction)
+def Recall(truePos, falseNeg):
+  recall = (round((truePos / (truePos + falseNeg)), 2))
+  print("Recall: " + str(recall))
+  return recall
 
-    data = {'Predicted': predicted, "Real": x}
-    df = pd.DataFrame(data)
-    a = df['Predicted'].to_list()
-    b = df['Real'].to_list()
+def Precision(truePos, falsePos):
+  precision = round((truePos / (truePos + falsePos)), 2)
+  print("Precision: " + str(precision))
+  return precision
 
-    result = df['Real'].value_counts().index.to_list()
-    data = matrix(a,b, result, class_labels)
-    records = len(D)
-    return records, data, result 
+def Fmeasure(precision, recall):
+  f_measure = round (( 2 * ((precision * recall) / (precision + recall))), 2)
+  print("f-measure: " + str(f_measure))
 
-def zero_matrix(result):
-  zeros = []
-  for i in range(len(result)):
-    zeros.append([0]*len(result))
 
-  actual = [] 
-  classified = []
-  for i in result:
-    actual.append("A "+ str(i))
-    classified.append("C "+ str(i))
 
-  data = pd.DataFrame(data = zeros, index = actual, columns = classified)
+def output(final_lst, final_df):
+    result_np = np.asarray(final_lst)
+    all_ = final_df.to_numpy().sum() # counts all elements (all counts in result df)
+    correct = np.trace(result_np) # counts diagonol elements 
 
-  return data
+    for author in final_df: 
+        print("\nAuthor: ",author)
+        true_pos = final_df.loc[author, author]
+        print("Hits: ", true_pos)
+        false_pos = final_df[author].sum() - true_pos
+        print("Strikes: ",false_pos) 
+        false_neg = final_df.loc[author].sum() - true_pos
+        print("Misses: ", false_neg)
+        
+        recall = Recall(true_pos, false_neg)
+        precision = Precision(true_pos, false_pos)
+        Fmeasure(precision, recall)
 
-def matrix(a,b, result, class_labels):
-  data = zero_matrix(class_labels)
-  x=0
-  for i, j in zip(a, b):
-    x = x + 1
-    data["C "+ str(i)]["A "+ str(j)] = data["C "+ str(i) ]["A "+ str(j)] + 1
-  return data
+
+        
+
+    
+    print("\nTotal Number Documents Correctly Predicted: ", correct) 
+    print("Total Number Documents Incorrectly Predicted:: ", all_ - correct)
+    print("Overall Accuracy: " ,(round(correct/all_, 2))) 
+
+
+#     For each author in the dataset, output the total number of hits (correctly predicted documents), strikes
+# (false positives predicted) and misses (document written by the author, which were not attributed to the
+# author).
+# • For each author in the dataset report the precision, the recall, and the f1-measure of the KNN procedure.
+
+
+
+
 
  
 def main():
-    training_file = input("training file:") 
-    # make sure training file is the same format 
+    #type_ = input("Insert Type:(okapi or cosin)")
+    type_ =  "okapi" #"cosin"
 
-    print("K: ")
-    k = int(input(""))
-    k = k +1
-  
-    restrictions_list = []
-    is_numeric, D, A = prepare_D_knn(training_file, restrictions_list)
-    D.dropna()
-    for i in D.columns:
-        D.drop(D.loc[D[i] == "?"].index, inplace=True)
-    correct = 0
-    total_amt = 0
-    accuracy = []
-
-    for i in range(1,k):
-        class_labels = D[D.columns[-1]].value_counts().to_dict()
-        records, data, result = classifier_knn(D, i, is_numeric, class_labels)
-        matrix_fin = []
+    for k in range(2,3):
+        print("Type:", type_)
+        print("\nK =", k)
+        
     
-        lst = data.values.tolist()
-
-        total = data.values.sum()
-
-        T = 0
-        for j in range(len(lst)):
-            T = T + lst[j][j]
-
-        correct += T
-        accuracy.append(T/total)
-        matrix_fin.append(data)
-        total_amt += total
-
-        print()
-        print("Overall Matrix of: KNN - K =", i)
-
-        overall_matrix = zero_matrix(result)
-        for j in matrix_fin:
-            overall_matrix = overall_matrix.add(j, fill_value=0)
-        print(overall_matrix)
-
-        print()
-        print("Totals: ")
-        #print("Total Number of records classified: ", total_amt)
-        print("Overall Accuracy: ", correct/total_amt)
-        print("Individual accuracies: ", accuracy)
-        print("Average accuracy: ", sum(accuracy)/len(accuracy))
+        lst_of_lsts, df = classifier_knn( k, type_)
+        output(lst_of_lsts, df)
+        
+        df.to_csv('knn/out.csv')
 
 
-            
+        
 
 main()
+
