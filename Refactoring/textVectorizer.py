@@ -206,27 +206,23 @@ def TF_IDF_main():
 
     #Generate initial vectorized DF
     print("Step 2: Creating initial vector of word counts")
-    if( not os.path.isfile("word_file_count.csv") ):
-        GenerateWordCount(directory, "word_file_count.csv")
-    if( not os.path.isfile("vectorDF.csv") ):
-        if(for_RF):
-            stop_words = stop_words_7000("word_file_count.csv")
-        else:
-            stop_words = put_stop_words_in_list("word_file_count.csv")
-        word_dict = create_word_count_dict(directory, stop_words)
-        vectorized_df = create_df(word_dict)
-        vectorized_df.to_csv("vectorDF.csv", sep=',')
+    GenerateWordCount(directory, "word_file_count.csv")
+    if(for_RF):
+        stop_words = stop_words_7000("word_file_count.csv")
+    else:
+        stop_words = put_stop_words_in_list("word_file_count.csv")
+    word_dict = create_word_count_dict(directory, stop_words)
+    vectorized_df = create_df(word_dict)
+    vectorized_df.to_csv("vectorDF.csv", sep=',')
 
     #Generate the normalized DF
     print("Step 3: Creating the normalized DF")
-    if( not os.path.isfile("normalizedTermDF.csv") ):
-        normalizedTermDF = normalizedTermFreq("vectorDF.csv", "normalizedTermDF.csv")    
+    normalizedTermDF = normalizedTermFreq("vectorDF.csv", "normalizedTermDF.csv")    
 
     #Generate the TF-IDF DF which contains the wij values
     print("Step 4: Creating the TF-IDF DF")
-    if( not os.path.isfile("TF_IDF.csv") ):
-        idf_dic = inverseDocumentFrequency_dic(NUMBER_OF_FILES_RUN, "word_file_count.csv")
-        Create_TF_IDF_DF("normalizedTermDF.csv", idf_dic, "TF_IDF.csv")
+    idf_dic = inverseDocumentFrequency_dic(NUMBER_OF_FILES_RUN, "word_file_count.csv")
+    Create_TF_IDF_DF("normalizedTermDF.csv", idf_dic, "TF_IDF.csv")
 
     #Generate the ground truth file
     print("Step 5: Creating the ground truth file")
